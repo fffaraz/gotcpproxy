@@ -39,3 +39,13 @@ CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" .
 ./gotcpproxy.exe -local-port 8081 -remote-addr 127.0.0.1:8082 -local-crt cert/2.crt -local-key cert/2.key -peer-crt cert/1.crt -remote-crt cert/3.crt -local-tls -remote-tls
 ./gotcpproxy.exe -local-port 8082 -remote-addr 192.168.1.2:22 -local-crt cert/3.crt -local-key cert/3.key -peer-crt cert/2.crt -local-tls
 ```
+
+## Use case 4
+```
+./gotcpproxy.exe -local-port 8080 -remote-addr 192.168.1.2:22 -log-data
+```
+
+## HTTP/Socks Proxy
+```
+docker run -it --rm -p "127.0.0.13128:3128" ginuerzh/gost:latest -L=":3128?whitelist=tcp:*:80,443&dns=1.1.1.2"
+```

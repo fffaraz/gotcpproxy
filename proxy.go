@@ -23,11 +23,12 @@ type TCPProxy struct {
 	remoteTLS    bool
 	localConfig  tls.Config
 	remoteConfig tls.Config
+	logData      bool
 	// remoteCert   string
 	// peerCert     string
 }
 
-func NewTCPProxy(localPort uint, localTLS bool, remoteAddr string, remoteTLS bool, localCrt, localKey, remoteCrt, peerCrt string) (*TCPProxy, error) {
+func NewTCPProxy(localPort uint, localTLS bool, remoteAddr string, remoteTLS bool, localCrt, localKey, remoteCrt, peerCrt string, logData bool) (*TCPProxy, error) {
 	if len(remoteAddr) == 0 {
 		return nil, fmt.Errorf("remote address is required")
 	}
@@ -36,6 +37,7 @@ func NewTCPProxy(localPort uint, localTLS bool, remoteAddr string, remoteTLS boo
 		localTLS:   localTLS,
 		remoteAddr: remoteAddr,
 		remoteTLS:  remoteTLS,
+		logData:    logData,
 	}
 	if localTLS {
 		if err := proxy.loadLocalCert(localCrt, localKey, peerCrt); err != nil {
@@ -143,11 +145,19 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		io.Copy(conn, remote)
+		if p.logData {
+			CopyConn(connID, false, conn, remote)
+		} else {
+			io.Copy(conn, remote)
+		}
 	}()
 	go func() {
 		defer wg.Done()
-		io.Copy(remote, conn)
+		if p.logData {
+			CopyConn(connID, true, remote, conn)
+		} else {
+			io.Copy(remote, conn)
+		}
 	}()
 	wg.Wait()
 }

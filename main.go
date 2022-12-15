@@ -22,10 +22,12 @@ func main() {
 	flag.StringVar(&remoteCrt, "remote-crt", "cert/remote.crt", "remote crt")
 	var peerCrt string
 	flag.StringVar(&peerCrt, "peer-crt", "cert/peer.crt", "peer crt")
+	var logData bool
+	flag.BoolVar(&logData, "log-data", false, "log data")
 
 	flag.Parse()
 
-	proxy, err := NewTCPProxy(localPort, localTLS, remoteAddr, remoteTLS, localCrt, localKey, remoteCrt, peerCrt)
+	proxy, err := NewTCPProxy(localPort, localTLS, remoteAddr, remoteTLS, localCrt, localKey, remoteCrt, peerCrt, logData)
 	if err != nil {
 		fmt.Println("ERROR:", err)
 		flag.Usage()
