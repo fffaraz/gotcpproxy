@@ -13,6 +13,13 @@ openssl genpkey -algorithm ed25519 -out 3.key
 openssl req -new -x509 -sha256 -key 3.key -out 3.crt -days 3650 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
 ```
 
+## Build
+```
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" .
+CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags "-s -w" .
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" .
+```
+
 ## Use case 1
 ```
 ./gotcpproxy.exe -local-port 8080 -remote-addr 127.0.0.1:8081 -local-crt cert/1.crt -local-key cert/1.key -remote-crt cert/2.crt -remote-tls
@@ -27,7 +34,6 @@ openssl req -new -x509 -sha256 -key 3.key -out 3.crt -days 3650 -subj '/CN=local
 ```
 
 ## Use case 3
-
 ```
 ./gotcpproxy.exe -local-port 8080 -remote-addr 127.0.0.1:8081 -local-crt cert/1.crt -local-key cert/1.key -remote-crt cert/2.crt -remote-tls
 ./gotcpproxy.exe -local-port 8081 -remote-addr 127.0.0.1:8082 -local-crt cert/2.crt -local-key cert/2.key -peer-crt cert/1.crt -remote-crt cert/3.crt -local-tls -remote-tls
