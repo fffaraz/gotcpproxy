@@ -29,7 +29,7 @@ type TCPProxy struct {
 
 func NewTCPProxy(localPort uint, localTLS bool, remoteAddr string, remoteTLS bool, localCrt, localKey, remoteCrt, peerCrt string) (*TCPProxy, error) {
 	if len(remoteAddr) == 0 {
-		return nil, fmt.Errorf("remote addr is required")
+		return nil, fmt.Errorf("remote address is required")
 	}
 	proxy := &TCPProxy{
 		localPort:  localPort,
@@ -176,6 +176,7 @@ func (p *TCPProxy) loadLocalCert(localCrt, localKey, peerCrt string) error {
 		ClientCAs:    caCertPool,
 		Certificates: []tls.Certificate{cert},
 		ClientAuth:   tls.RequireAndVerifyClientCert,
+		MinVersion:   tls.VersionTLS13,
 	}
 
 	block, _ := pem.Decode(caCertPEM)
@@ -216,6 +217,7 @@ func (p *TCPProxy) loadRemoteCert(localCrt, localKey, remoteCrt string) error {
 		Certificates:       []tls.Certificate{cert},
 		InsecureSkipVerify: false,
 		ServerName:         "localhost",
+		MinVersion:         tls.VersionTLS13,
 	}
 
 	block, _ := pem.Decode(caCertPEM)
