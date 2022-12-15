@@ -20,6 +20,11 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags "-s -w" .
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" .
 ```
 
+## Install
+```
+go install github.com/fffaraz/gotcpproxy@latest
+```
+
 ## Use case 1
 ```
 ./gotcpproxy.exe -local-port 8080 -remote-addr 127.0.0.1:8081 -local-crt cert/1.crt -local-key cert/1.key -remote-crt cert/2.crt -remote-tls
