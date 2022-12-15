@@ -22,8 +22,8 @@ type TCPProxy struct {
 	remoteTLS    bool
 	localConfig  tls.Config
 	remoteConfig tls.Config
-	remoteCert   string
-	peerCert     string
+	// remoteCert   string
+	// peerCert     string
 }
 
 func NewTCPProxy(localPort uint, localTLS bool, remoteAddr string, remoteTLS bool, localCrt, localKey, remoteCrt, peerCrt string) (*TCPProxy, error) {
@@ -89,17 +89,19 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 			log.Println("Error handshaking local TLS:", err, "id:", connID)
 			return
 		}
-		state := conn.(*tls.Conn).ConnectionState()
-		if len(state.PeerCertificates) < 1 {
-			log.Println("No local peer certificate found, id:", connID)
-			return
-		}
-		cert := hex.EncodeToString(state.PeerCertificates[0].PublicKey.(ed25519.PublicKey))
-		// log.Println("Local peer cert:", cert, "id:", connID)
-		if cert != p.peerCert {
-			log.Println("Local peer certificate does not match, id:", connID)
-			return
-		}
+		/*
+			state := conn.(*tls.Conn).ConnectionState()
+			if len(state.PeerCertificates) < 1 {
+				log.Println("No local peer certificate found, id:", connID)
+				return
+			}
+			cert := hex.EncodeToString(state.PeerCertificates[0].PublicKey.(ed25519.PublicKey))
+			// log.Println("Local peer cert:", cert, "id:", connID)
+			if cert != p.peerCert {
+				log.Println("Local peer certificate does not match, id:", connID)
+				return
+			}
+		*/
 	}
 
 	var err error
@@ -121,17 +123,19 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 			log.Println("Error handshaking remote TLS:", err, "id:", connID)
 			return
 		}
-		state := remote.(*tls.Conn).ConnectionState()
-		if len(state.PeerCertificates) < 1 {
-			log.Println("No remote peer certificate found, id:", connID)
-			return
-		}
-		cert := hex.EncodeToString(state.PeerCertificates[0].PublicKey.(ed25519.PublicKey))
-		// log.Println("Remote peer cert:", cert, "id:", connID)
-		if cert != p.remoteCert {
-			log.Println("Remote peer certificate does not match, id:", connID)
-			return
-		}
+		/*
+			state := remote.(*tls.Conn).ConnectionState()
+			if len(state.PeerCertificates) < 1 {
+				log.Println("No remote peer certificate found, id:", connID)
+				return
+			}
+			cert := hex.EncodeToString(state.PeerCertificates[0].PublicKey.(ed25519.PublicKey))
+			// log.Println("Remote peer cert:", cert, "id:", connID)
+			if cert != p.remoteCert {
+				log.Println("Remote peer certificate does not match, id:", connID)
+				return
+			}
+		*/
 	}
 
 	go io.Copy(conn, remote)
@@ -161,7 +165,7 @@ func (p *TCPProxy) loadLocalCert(localCrt, localKey, peerCrt string) error {
 	p.localConfig = tls.Config{
 		RootCAs:      caCertPool,
 		Certificates: []tls.Certificate{cert},
-		ClientAuth:   tls.RequireAnyClientCert,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
 	}
 
 	block, _ := pem.Decode(caCertPEM)
@@ -170,8 +174,9 @@ func (p *TCPProxy) loadLocalCert(localCrt, localKey, peerCrt string) error {
 		log.Println("Error parsing peer cert:", err)
 		return err
 	}
-	p.peerCert = hex.EncodeToString(peerCert.PublicKey.(ed25519.PublicKey))
-	log.Println("Peer   cert:", p.peerCert)
+	peerCertStr := hex.EncodeToString(peerCert.PublicKey.(ed25519.PublicKey))
+	log.Println("Peer   cert:", peerCertStr)
+	// p.peerCert = peerCertStr
 
 	return nil
 }
@@ -209,8 +214,9 @@ func (p *TCPProxy) loadRemoteCert(localCrt, localKey, remoteCrt string) error {
 		log.Println("Error parsing remote cert:", err)
 		return err
 	}
-	p.remoteCert = hex.EncodeToString(remoteCert.PublicKey.(ed25519.PublicKey))
-	log.Println("Remote cert:", p.remoteCert)
+	remoteCertStr := hex.EncodeToString(remoteCert.PublicKey.(ed25519.PublicKey))
+	log.Println("Remote cert:", remoteCertStr)
+	// p.remoteCert = remoteCertStr
 
 	return nil
 }
