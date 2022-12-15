@@ -163,7 +163,7 @@ func (p *TCPProxy) loadLocalCert(localCrt, localKey, peerCrt string) error {
 	}
 
 	p.localConfig = tls.Config{
-		RootCAs:      caCertPool,
+		ClientCAs:    caCertPool,
 		Certificates: []tls.Certificate{cert},
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 	}
