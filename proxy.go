@@ -78,7 +78,10 @@ func (p *TCPProxy) Run() error {
 }
 
 func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
-	defer conn.Close()
+	defer func() {
+		conn.Close()
+		log.Println("Closed connection:", connID)
+	}()
 	log.Println("Accepted connection from:", conn.RemoteAddr(), "id:", connID)
 
 	if p.localTLS {
@@ -133,8 +136,6 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 
 	go io.Copy(remote, conn)
 	io.Copy(conn, remote)
-
-	log.Println("Closed connection:", connID)
 }
 
 func (p *TCPProxy) loadLocalCert(localCrt, localKey, peerCrt string) error {
