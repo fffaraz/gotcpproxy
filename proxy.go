@@ -134,8 +134,8 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 		}
 	}
 
-	go io.Copy(remote, conn)
-	io.Copy(conn, remote)
+	go io.Copy(conn, remote)
+	io.Copy(remote, conn)
 }
 
 func (p *TCPProxy) loadLocalCert(localCrt, localKey, peerCrt string) error {
