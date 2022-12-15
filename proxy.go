@@ -11,6 +11,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync"
 )
 
 const strTCP = "tcp"
@@ -138,8 +139,17 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 		*/
 	}
 
-	go io.Copy(conn, remote)
-	io.Copy(remote, conn)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		io.Copy(conn, remote)
+	}()
+	go func() {
+		defer wg.Done()
+		io.Copy(remote, conn)
+	}()
+	wg.Wait()
 }
 
 func (p *TCPProxy) loadLocalCert(localCrt, localKey, peerCrt string) error {
