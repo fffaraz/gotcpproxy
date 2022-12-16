@@ -7,6 +7,8 @@ import (
 	"log"
 	"net"
 	"net/textproto"
+	"strings"
+	"sync"
 )
 
 func PrintTLSConnState(conn *tls.Conn) {
@@ -49,7 +51,7 @@ func ReadLineFromConn(conn net.Conn) (string, error) {
 	return line, nil
 }
 
-func CopyConn(connID int, dir bool, conn1, conn2 net.Conn) {
+func CopyConn(connID int, dir bool, conn1, conn2 net.Conn, stdoutMutex *sync.Mutex) {
 	buf := make([]byte, 64*1024)
 	dirStr := "local -> remote"
 	if dir {
@@ -59,31 +61,52 @@ func CopyConn(connID int, dir bool, conn1, conn2 net.Conn) {
 		n, err := conn1.Read(buf)
 		if n > 0 {
 			conn2.Write(buf[:n])
+			stdoutMutex.Lock()
 			fmt.Println()
 			log.Printf("connID: %d  %s  bytes: %d\n", connID, dirStr, n)
 			PrintByteArray(buf[:n])
+			stdoutMutex.Unlock()
 		}
 		if err != nil {
+			stdoutMutex.Lock()
 			fmt.Println()
 			log.Printf("connID: %d  %s  error: %v\n", connID, dirStr, err)
+			stdoutMutex.Unlock()
 			break
 		}
 	}
 }
 
 func PrintByteArray(bytes []byte) {
-	for _, b := range bytes {
-		if b >= 32 && b <= 126 {
-			fmt.Printf("%c", b)
-		} else if b == 9 {
-			fmt.Printf("\\t")
-		} else if b == 10 {
-			fmt.Printf("\\n")
-		} else if b == 13 {
-			fmt.Printf("\\r")
-		} else {
-			fmt.Printf("\\x%02x", b)
+	offset := 0
+	base := 0
+	index := 0
+	for n := len(bytes); n > 0; offset, base = 0, base+16 {
+		parts := []string{fmt.Sprintf("%08x:", base)}
+		count := 16 - offset
+		if count > n {
+			count = n
 		}
+		ch := make([]byte, 17)
+		ch[0] = ' '
+		for i := 1; i <= offset; i++ {
+			parts = append(parts, "  ")
+			ch[i] = byte(' ')
+		}
+		for i := 0; i < count; i++ {
+			c := bytes[index+i]
+			parts = append(parts, fmt.Sprintf("%02x", c))
+			if c < 32 || c >= 127 {
+				c = byte('.')
+			}
+			ch[1+i+offset] = c
+		}
+		for i := offset + count; i < 16; i++ {
+			parts = append(parts, "  ")
+		}
+		parts = append(parts, string(ch[:1+offset+count]))
+		fmt.Println(strings.Join(parts, " "))
+		index += count
+		n -= count
 	}
-	fmt.Println()
 }

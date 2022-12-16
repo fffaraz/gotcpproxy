@@ -24,6 +24,7 @@ type TCPProxy struct {
 	localConfig  tls.Config
 	remoteConfig tls.Config
 	logData      bool
+	stdoutMutex  sync.Mutex
 	// remoteCert   string
 	// peerCert     string
 }
@@ -146,7 +147,7 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 	go func() {
 		defer wg.Done()
 		if p.logData {
-			CopyConn(connID, false, conn, remote)
+			CopyConn(connID, false, conn, remote, &p.stdoutMutex)
 		} else {
 			io.Copy(conn, remote)
 		}
@@ -154,7 +155,7 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 	go func() {
 		defer wg.Done()
 		if p.logData {
-			CopyConn(connID, true, remote, conn)
+			CopyConn(connID, true, remote, conn, &p.stdoutMutex)
 		} else {
 			io.Copy(remote, conn)
 		}
