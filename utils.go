@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
-	"net/textproto"
 	"strings"
 	"sync"
 )
@@ -39,16 +37,6 @@ func PrintTLSConnState(conn *tls.Conn) {
 		fmt.Println("Public key:", cert.PublicKey)
 	}
 	fmt.Println(">>>>>>>>>>>>>>>> END TLS INFO <<<<<<<<<<<<<<<<")
-}
-
-func ReadLineFromConn(conn net.Conn) (string, error) {
-	reader := bufio.NewReader(conn)
-	tp := textproto.NewReader(reader)
-	line, err := tp.ReadLine()
-	if err != nil {
-		return "", err
-	}
-	return line, nil
 }
 
 func CopyConn(connID int, dir bool, conn1, conn2 net.Conn, stdoutMutex *sync.Mutex) {
