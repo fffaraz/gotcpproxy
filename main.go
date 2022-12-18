@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+
+	"github.com/fffaraz/gotcpproxy/proxy"
 )
 
 func main() {
@@ -27,7 +29,7 @@ func main() {
 
 	flag.Parse()
 
-	proxy, err := NewTCPProxy(localPort, localTLS, remoteAddr, remoteTLS, localCrt, localKey, remoteCrt, peerCrt, logData)
+	proxy, err := proxy.NewTCPProxy(localPort, localTLS, remoteAddr, remoteTLS, localCrt, localKey, remoteCrt, peerCrt, logData)
 	if err != nil {
 		fmt.Println("ERROR:", err)
 		flag.Usage()
