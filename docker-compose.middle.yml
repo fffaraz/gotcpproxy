@@ -1,0 +1,7 @@
+services:
+  app:
+    image: fffaraz/gotcpproxy:latest
+    restart: always
+    command: -local-port 443 -remote-addr example:443 -local-crt cert/2.crt -local-key cert/2.key -peer-crt cert/1.crt -remote-crt cert/3.crt -local-tls -remote-tls
+    ports:
+      - "443:443"

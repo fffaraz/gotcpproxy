@@ -1,0 +1,16 @@
+services:
+  app:
+    image: fffaraz/gotcpproxy:latest
+    restart: always
+    command: -local-port 443 -remote-addr ghost:3128 -local-crt cert/3.crt -local-key cert/3.key -peer-crt cert/2.crt -local-tls
+    links:
+      - ghost
+    ports:
+      - "443:443"
+
+  ghost:
+    image: ginuerzh/gost:latest
+    restart: always
+    command: -L=:3128?whitelist=tcp:*:80,443&dns=1.1.1.2
+    logging:
+      driver: "none"

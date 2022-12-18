@@ -3,14 +3,10 @@ TCP over TLS Proxy in Go
 
 ## Generate certificates
 ```
-openssl genpkey -algorithm ed25519 -out 1.key
-openssl req -new -x509 -sha256 -key 1.key -out 1.crt -days 3650 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
-
-openssl genpkey -algorithm ed25519 -out 2.key
-openssl req -new -x509 -sha256 -key 2.key -out 2.crt -days 3650 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
-
-openssl genpkey -algorithm ed25519 -out 3.key
-openssl req -new -x509 -sha256 -key 3.key -out 3.crt -days 3650 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+for i in {1..3}; do
+    openssl genpkey -algorithm ed25519 -out $i.key
+    openssl req -new -x509 -sha256 -key $i.key -out $i.crt -days 3650 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+done
 ```
 
 ## Build
@@ -53,4 +49,11 @@ go install github.com/fffaraz/gotcpproxy@latest
 ## HTTP/Socks Proxy
 ```
 docker run -it --rm -p "127.0.0.13128:3128" ginuerzh/gost:latest -L=":3128?whitelist=tcp:*:80,443&dns=1.1.1.2"
+```
+
+## docker-compose
+```
+docker-compose -f docker-compose.client.yml up
+docker-compose -f docker-compose.middle.yml up
+docker-compose -f docker-compose.server.yml up
 ```

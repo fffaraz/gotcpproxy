@@ -1,0 +1,7 @@
+services:
+  app:
+    image: fffaraz/gotcpproxy:latest
+    restart: always
+    command: -local-port 8080 -remote-addr example.com:443 -local-crt cert/1.crt -local-key cert/1.key -remote-crt cert/2.crt -remote-tls
+    ports:
+      - "8080:8080"
