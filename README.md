@@ -46,7 +46,7 @@ go install github.com/fffaraz/gotcpproxy@latest
 ./gotcpproxy.exe -local-port 8080 -remote-addr 192.168.1.2:22 -log-data
 ```
 
-## HTTP/Socks Proxy
+## HTTP/Socks5 Proxy
 ```
 docker run -it --rm -p "127.0.0.13128:3128" ginuerzh/gost:latest -L=":3128?whitelist=tcp:*:80,443&dns=1.1.1.2"
 ```
