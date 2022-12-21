@@ -33,15 +33,17 @@ type TCPProxy struct {
 	// peerCert     string
 }
 
-func NewTCPProxy(localPort uint, localTLS bool, remoteAddr string, remoteTLS bool, localCrt, localKey, remoteCrt, peerCrt string, logData bool) (*TCPProxy, error) {
+func NewTCPProxy(localPort uint, localTLS, localZstd bool, remoteAddr string, remoteTLS, remoteZstd bool, localCrt, localKey, remoteCrt, peerCrt string, logData bool) (*TCPProxy, error) {
 	if len(remoteAddr) == 0 {
 		return nil, fmt.Errorf("remote address is required")
 	}
 	proxy := &TCPProxy{
 		localPort:  localPort,
 		localTLS:   localTLS,
+		localZstd:  localZstd,
 		remoteAddr: remoteAddr,
 		remoteTLS:  remoteTLS,
+		remoteZstd: remoteZstd,
 		logData:    logData,
 	}
 	if localTLS {
@@ -71,7 +73,7 @@ func (p *TCPProxy) Run() error {
 		return err
 	}
 	defer listen.Close()
-	log.Printf("Listening on %s proxying to %s (local tls: %t, remote tls: %t)", listen.Addr(), p.remoteAddr, p.localTLS, p.remoteTLS)
+	log.Printf("Listening on %s proxying to %s (local tls: %t, local zstd: %t, remote tls: %t, remote zstd: %t)", listen.Addr(), p.remoteAddr, p.localTLS, p.localZstd, p.remoteTLS, p.remoteZstd)
 
 	connID := 0
 	for {
@@ -125,6 +127,9 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 		return
 	}
 	defer remote.Close()
+	if p.logData {
+		log.Println("Connected to remote:", remote.RemoteAddr(), "id:", connID)
+	}
 
 	if p.remoteTLS {
 		if err := remote.(*tls.Conn).Handshake(); err != nil {
@@ -152,13 +157,13 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 	var remoteWriter io.Writer = remote
 
 	if p.localZstd {
-		connReader, err = zstd.NewReader(conn)
+		connReader, err = zstd.NewReader(conn, zstd.WithDecoderConcurrency(1))
 		if err != nil {
 			log.Println("Error creating local zstd reader:", err, "id:", connID)
 			return
 		}
 		defer connReader.(*zstd.Decoder).Close()
-		connWriter, err = zstd.NewWriter(conn)
+		connWriter, err = zstd.NewWriter(conn, zstd.WithEncoderConcurrency(1))
 		if err != nil {
 			log.Println("Error creating local zstd writer:", err, "id:", connID)
 			return
@@ -167,13 +172,13 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 	}
 
 	if p.remoteZstd {
-		remoteReader, err = zstd.NewReader(remote)
+		remoteReader, err = zstd.NewReader(remote, zstd.WithDecoderConcurrency(1))
 		if err != nil {
 			log.Println("Error creating remote zstd reader:", err, "id:", connID)
 			return
 		}
 		defer remoteReader.(*zstd.Decoder).Close()
-		remoteWriter, err = zstd.NewWriter(remote)
+		remoteWriter, err = zstd.NewWriter(remote, zstd.WithEncoderConcurrency(1))
 		if err != nil {
 			log.Println("Error creating remote zstd writer:", err, "id:", connID)
 			return
@@ -186,7 +191,7 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 	go func() {
 		defer wg.Done()
 		if p.logData {
-			name := fmt.Sprintf("connID: %d  local -> remote", connID)
+			name := fmt.Sprintf("connID: %d  remote -> local", connID)
 			CopyConn(name, connWriter, remoteReader, &p.stdoutMutex)
 		} else {
 			io.Copy(connWriter, remoteReader)
@@ -195,7 +200,7 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 	go func() {
 		defer wg.Done()
 		if p.logData {
-			name := fmt.Sprintf("connID: %d  remote -> local", connID)
+			name := fmt.Sprintf("connID: %d  local -> remote", connID)
 			CopyConn(name, remoteWriter, connReader, &p.stdoutMutex)
 		} else {
 			io.Copy(remoteWriter, connReader)

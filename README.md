@@ -50,6 +50,13 @@ client <--(plain)--> GoTCPproxy (logger) <--(plain)--> target
 ./gotcpproxy.exe -local-port 8080 -remote-addr 192.168.1.2:22 -log-data
 ```
 
+## Use case 5
+client <--(plain)--> GoTCPproxy (local) <----(Zstd)----> GoTCPproxy (remote) <--(plain)--> target
+```
+./gotcpproxy.exe -local-port 8080 -remote-addr 127.0.0.1:8081 -remote-zstd
+./gotcpproxy.exe -local-port 8081 -remote-addr 192.168.1.2:22 -local-zstd
+```
+
 ## HTTP/SOCKS5 Proxy
 ```
 docker run -it --rm -p "127.0.0.13128:3128" ginuerzh/gost:latest -L=":3128?whitelist=tcp:*:80,443&dns=1.1.1.2"

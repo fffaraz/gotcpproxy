@@ -24,7 +24,7 @@ func CopyConn(name string, dst io.Writer, src io.Reader, stdoutMutex *sync.Mutex
 				break
 			}
 			if nw != nr {
-				// short write
+				printError(name+" short-write", err, stdoutMutex)
 				break
 			}
 		}
