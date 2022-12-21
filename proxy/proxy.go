@@ -186,6 +186,18 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 		defer remoteWriter.(*zstd.Encoder).Close()
 	}
 
+	/*
+		if p.localZstd {
+			connReader = snappy.NewReader(conn)
+			connWriter = snappy.NewWriter(conn)
+		}
+
+		if p.remoteZstd {
+			remoteReader = snappy.NewReader(remote)
+			remoteWriter = snappy.NewWriter(remote)
+		}
+	*/
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
