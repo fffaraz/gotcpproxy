@@ -12,6 +12,8 @@ import (
 	"net"
 	"os"
 	"sync"
+
+	"github.com/klauspost/compress/zstd"
 )
 
 const strTCP = "tcp"
@@ -19,8 +21,10 @@ const strTCP = "tcp"
 type TCPProxy struct {
 	localPort    uint
 	localTLS     bool
+	localZstd    bool
 	remoteAddr   string
 	remoteTLS    bool
+	remoteZstd   bool
 	localConfig  tls.Config
 	remoteConfig tls.Config
 	logData      bool
@@ -142,22 +146,59 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 		*/
 	}
 
+	var connReader io.Reader = conn
+	var connWriter io.Writer = conn
+	var remoteReader io.Reader = remote
+	var remoteWriter io.Writer = remote
+
+	if p.localZstd {
+		connReader, err = zstd.NewReader(conn)
+		if err != nil {
+			log.Println("Error creating local zstd reader:", err, "id:", connID)
+			return
+		}
+		defer connReader.(*zstd.Decoder).Close()
+		connWriter, err = zstd.NewWriter(conn)
+		if err != nil {
+			log.Println("Error creating local zstd writer:", err, "id:", connID)
+			return
+		}
+		defer connWriter.(*zstd.Encoder).Close()
+	}
+
+	if p.remoteZstd {
+		remoteReader, err = zstd.NewReader(remote)
+		if err != nil {
+			log.Println("Error creating remote zstd reader:", err, "id:", connID)
+			return
+		}
+		defer remoteReader.(*zstd.Decoder).Close()
+		remoteWriter, err = zstd.NewWriter(remote)
+		if err != nil {
+			log.Println("Error creating remote zstd writer:", err, "id:", connID)
+			return
+		}
+		defer remoteWriter.(*zstd.Encoder).Close()
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		if p.logData {
-			CopyConn(connID, false, conn, remote, &p.stdoutMutex)
+			name := fmt.Sprintf("connID: %d  local -> remote", connID)
+			CopyConn(name, connWriter, remoteReader, &p.stdoutMutex)
 		} else {
-			io.Copy(conn, remote)
+			io.Copy(connWriter, remoteReader)
 		}
 	}()
 	go func() {
 		defer wg.Done()
 		if p.logData {
-			CopyConn(connID, true, remote, conn, &p.stdoutMutex)
+			name := fmt.Sprintf("connID: %d  remote -> local", connID)
+			CopyConn(name, remoteWriter, connReader, &p.stdoutMutex)
 		} else {
-			io.Copy(remote, conn)
+			io.Copy(remoteWriter, connReader)
 		}
 	}()
 	wg.Wait()

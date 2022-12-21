@@ -1,68 +1,45 @@
 package proxy
 
 import (
-	"crypto/tls"
 	"fmt"
+	"io"
 	"log"
-	"net"
 	"strings"
 	"sync"
 )
 
-func PrintTLSConnState(conn *tls.Conn) {
-	fmt.Println(">>>>>>>>>>>>>>>> TLS INFO <<<<<<<<<<<<<<<<")
-	state := conn.ConnectionState()
-	fmt.Printf("Version: %x\n", state.Version)
-	fmt.Printf("HandshakeComplete: %t\n", state.HandshakeComplete)
-	fmt.Printf("DidResume: %t\n", state.DidResume)
-	fmt.Printf("CipherSuite: %x\n", state.CipherSuite)
-	fmt.Printf("NegotiatedProtocol: %s\n", state.NegotiatedProtocol)
-	fmt.Println("Certificate chain:")
-	for i, cert := range state.PeerCertificates {
-		subject := cert.Subject
-		issuer := cert.Issuer
-		fmt.Printf(" %d s:/C=%v/ST=%v/L=%v/O=%v/OU=%v/CN=%s\n", i, subject.Country, subject.Province, subject.Locality, subject.Organization, subject.OrganizationalUnit, subject.CommonName)
-		fmt.Printf("   i:/C=%v/ST=%v/L=%v/O=%v/OU=%v/CN=%s\n", issuer.Country, issuer.Province, issuer.Locality, issuer.Organization, issuer.OrganizationalUnit, issuer.CommonName)
-		fmt.Println("Subject:", cert.Subject)
-		fmt.Println("Issuer:", cert.Issuer)
-		fmt.Println("Version:", cert.Version)
-		fmt.Println("NotAfter:", cert.NotAfter)
-		fmt.Println("DNS names:", cert.DNSNames)
-		fmt.Println("IP addresses:", cert.IPAddresses)
-		fmt.Println("Email addresses:", cert.EmailAddresses)
-		fmt.Println("URIs:", cert.URIs)
-		fmt.Println("Signature:", cert.Signature)
-		fmt.Println("Signature algorithm:", cert.SignatureAlgorithm)
-		fmt.Println("Public key algorithm:", cert.PublicKeyAlgorithm)
-		fmt.Println("Public key:", cert.PublicKey)
-	}
-	fmt.Println(">>>>>>>>>>>>>>>> END TLS INFO <<<<<<<<<<<<<<<<")
-}
-
-func CopyConn(connID int, dir bool, conn1, conn2 net.Conn, stdoutMutex *sync.Mutex) {
+func CopyConn(name string, dst io.Writer, src io.Reader, stdoutMutex *sync.Mutex) {
 	buf := make([]byte, 64*1024)
-	dirStr := "local -> remote"
-	if dir {
-		dirStr = "remote -> local"
-	}
 	for {
-		n, err := conn1.Read(buf)
-		if n > 0 {
-			conn2.Write(buf[:n])
+		nr, err := src.Read(buf)
+		if nr > 0 {
 			stdoutMutex.Lock()
 			fmt.Println()
-			log.Printf("connID: %d  %s  bytes: %d\n", connID, dirStr, n)
-			PrintByteArray(buf[:n])
+			log.Printf("%s  bytes: %d\n", name, nr)
+			PrintByteArray(buf[:nr])
 			stdoutMutex.Unlock()
+			nw, err := dst.Write(buf[:nr])
+			if err != nil {
+				printError(name+" dst.Write", err, stdoutMutex)
+				break
+			}
+			if nw != nr {
+				// short write
+				break
+			}
 		}
 		if err != nil {
-			stdoutMutex.Lock()
-			fmt.Println()
-			log.Printf("connID: %d  %s  error: %v\n", connID, dirStr, err)
-			stdoutMutex.Unlock()
+			printError(name+" src.Read", err, stdoutMutex)
 			break
 		}
 	}
+}
+
+func printError(name string, err error, stdoutMutex *sync.Mutex) {
+	stdoutMutex.Lock()
+	defer stdoutMutex.Unlock()
+	fmt.Println()
+	log.Printf("%s  error: %v\n", name, err)
 }
 
 func PrintByteArray(bytes []byte) {
