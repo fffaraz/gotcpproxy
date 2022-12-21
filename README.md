@@ -22,12 +22,14 @@ go install github.com/fffaraz/gotcpproxy@latest
 ```
 
 ## Use case 1
+client <--(plain)--> GoTCPproxy (local) <----(TLS)----> GoTCPproxy (remote) <--(plain)--> target
 ```
 ./gotcpproxy.exe -local-port 8080 -remote-addr 127.0.0.1:8081 -local-crt cert/1.crt -local-key cert/1.key -remote-crt cert/2.crt -remote-tls
 ./gotcpproxy.exe -local-port 8081 -remote-addr 192.168.1.2:22 -local-crt cert/2.crt -local-key cert/2.key -peer-crt cert/1.crt -local-tls
 ```
 
 ## Use case 2
+client <--(plain)--> GoTCPproxy (local) <----(TLS)----> GoTCPproxy (middle) <----(TLS)----> GoTCPproxy (remote) <--(plain)--> target
 ```
 ./gotcpproxy.exe -local-port 8080 -remote-addr 127.0.0.1:8081 -local-crt cert/1.crt -local-key cert/1.key -remote-crt cert/2.crt -remote-tls
 ./gotcpproxy.exe -local-port 8081 -remote-addr 127.0.0.1:8082
@@ -35,6 +37,7 @@ go install github.com/fffaraz/gotcpproxy@latest
 ```
 
 ## Use case 3
+client <--(plain)--> GoTCPproxy (local) <----(TLS)----> GoTCPproxy (middle) <----(TLS)----> GoTCPproxy (remote) <--(plain)--> target
 ```
 ./gotcpproxy.exe -local-port 8080 -remote-addr 127.0.0.1:8081 -local-crt cert/1.crt -local-key cert/1.key -remote-crt cert/2.crt -remote-tls
 ./gotcpproxy.exe -local-port 8081 -remote-addr 127.0.0.1:8082 -local-crt cert/2.crt -local-key cert/2.key -peer-crt cert/1.crt -remote-crt cert/3.crt -local-tls -remote-tls
@@ -42,6 +45,7 @@ go install github.com/fffaraz/gotcpproxy@latest
 ```
 
 ## Use case 4
+client <--(plain)--> GoTCPproxy (logger) <--(plain)--> target
 ```
 ./gotcpproxy.exe -local-port 8080 -remote-addr 192.168.1.2:22 -log-data
 ```
