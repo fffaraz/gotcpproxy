@@ -29,6 +29,9 @@ type TCPProxy struct {
 	remoteConfig tls.Config
 	logData      bool
 	stdoutMutex  sync.Mutex
+	nagles       bool
+	// bytesSent    uint64
+	// bytesRecv    uint64
 	// remoteCert   string
 	// peerCert     string
 }
@@ -149,6 +152,17 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 				return
 			}
 		*/
+	}
+
+	if p.nagles {
+		if err := conn.(*net.TCPConn).SetNoDelay(false); err != nil {
+			log.Println("Error setting local nagle:", err, "id:", connID)
+			return
+		}
+		if err := remote.(*net.TCPConn).SetNoDelay(false); err != nil {
+			log.Println("Error setting remote nagle:", err, "id:", connID)
+			return
+		}
 	}
 
 	var connReader io.Reader = conn
