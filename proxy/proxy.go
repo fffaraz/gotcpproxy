@@ -32,8 +32,6 @@ type TCPProxy struct {
 	nagles       bool
 	// bytesSent    uint64
 	// bytesRecv    uint64
-	// remoteCert   string
-	// peerCert     string
 }
 
 func NewTCPProxy(localPort uint, localTLS, localZstd bool, remoteAddr string, remoteTLS, remoteZstd bool, localCrt, localKey, remoteCrt, peerCrt string, logData bool) (*TCPProxy, error) {
@@ -102,19 +100,6 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 			log.Println("Error handshaking local TLS:", err, "id:", connID)
 			return
 		}
-		/*
-			state := conn.(*tls.Conn).ConnectionState()
-			if len(state.PeerCertificates) < 1 {
-				log.Println("No local peer certificate found, id:", connID)
-				return
-			}
-			cert := hex.EncodeToString(state.PeerCertificates[0].PublicKey.(ed25519.PublicKey))
-			// log.Println("Local peer cert:", cert, "id:", connID)
-			if cert != p.peerCert {
-				log.Println("Local peer certificate does not match, id:", connID)
-				return
-			}
-		*/
 	}
 
 	var err error
@@ -139,19 +124,6 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 			log.Println("Error handshaking remote TLS:", err, "id:", connID)
 			return
 		}
-		/*
-			state := remote.(*tls.Conn).ConnectionState()
-			if len(state.PeerCertificates) < 1 {
-				log.Println("No remote peer certificate found, id:", connID)
-				return
-			}
-			cert := hex.EncodeToString(state.PeerCertificates[0].PublicKey.(ed25519.PublicKey))
-			// log.Println("Remote peer cert:", cert, "id:", connID)
-			if cert != p.remoteCert {
-				log.Println("Remote peer certificate does not match, id:", connID)
-				return
-			}
-		*/
 	}
 
 	if p.nagles {
@@ -270,7 +242,6 @@ func (p *TCPProxy) loadLocalCert(localCrt, localKey, peerCrt string) error {
 	}
 	peerCertStr := hex.EncodeToString(peerCert.PublicKey.(ed25519.PublicKey))
 	log.Println("Peer   cert:", peerCertStr)
-	// p.peerCert = peerCertStr
 
 	return nil
 }
@@ -311,7 +282,6 @@ func (p *TCPProxy) loadRemoteCert(localCrt, localKey, remoteCrt string) error {
 	}
 	remoteCertStr := hex.EncodeToString(remoteCert.PublicKey.(ed25519.PublicKey))
 	log.Println("Remote cert:", remoteCertStr)
-	// p.remoteCert = remoteCertStr
 
 	return nil
 }
