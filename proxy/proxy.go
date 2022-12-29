@@ -73,7 +73,7 @@ func (p *TCPProxy) Run() error {
 		return err
 	}
 	defer listen.Close()
-	log.Printf("Listening on %s proxying to %s (local tls: %t, local zip: %t, remote tls: %t, remote zip: %t)", listen.Addr(), p.remoteAddr, p.localTLS, p.localZip, p.remoteTLS, p.remoteZip)
+	log.Printf("Listening on %s proxying to %s (local-tls: %t, local-zip: %t, remote-tls: %t, remote-zip: %t)", listen.Addr(), p.remoteAddr, p.localTLS, p.localZip, p.remoteTLS, p.remoteZip)
 
 	connID := 0
 	for {
