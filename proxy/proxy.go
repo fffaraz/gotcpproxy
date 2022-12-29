@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"compress/gzip"
 	"crypto/ed25519"
 	"crypto/tls"
 	"crypto/x509"
@@ -12,8 +13,6 @@ import (
 	"net"
 	"os"
 	"sync"
-
-	"github.com/klauspost/compress/zstd"
 )
 
 const strTCP = "tcp"
@@ -21,10 +20,10 @@ const strTCP = "tcp"
 type TCPProxy struct {
 	localPort    uint
 	localTLS     bool
-	localZstd    bool
+	localZip     bool
 	remoteAddr   string
 	remoteTLS    bool
-	remoteZstd   bool
+	remoteZip    bool
 	localConfig  tls.Config
 	remoteConfig tls.Config
 	logData      bool
@@ -34,17 +33,17 @@ type TCPProxy struct {
 	// bytesRecv    uint64
 }
 
-func NewTCPProxy(localPort uint, localTLS, localZstd bool, remoteAddr string, remoteTLS, remoteZstd bool, localCrt, localKey, remoteCrt, peerCrt string, logData bool) (*TCPProxy, error) {
+func NewTCPProxy(localPort uint, localTLS, localZip bool, remoteAddr string, remoteTLS, remoteZip bool, localCrt, localKey, remoteCrt, peerCrt string, logData bool) (*TCPProxy, error) {
 	if len(remoteAddr) == 0 {
 		return nil, fmt.Errorf("remote address is required")
 	}
 	proxy := &TCPProxy{
 		localPort:  localPort,
 		localTLS:   localTLS,
-		localZstd:  localZstd,
+		localZip:   localZip,
 		remoteAddr: remoteAddr,
 		remoteTLS:  remoteTLS,
-		remoteZstd: remoteZstd,
+		remoteZip:  remoteZip,
 		logData:    logData,
 	}
 	if localTLS {
@@ -74,7 +73,7 @@ func (p *TCPProxy) Run() error {
 		return err
 	}
 	defer listen.Close()
-	log.Printf("Listening on %s proxying to %s (local tls: %t, local zstd: %t, remote tls: %t, remote zstd: %t)", listen.Addr(), p.remoteAddr, p.localTLS, p.localZstd, p.remoteTLS, p.remoteZstd)
+	log.Printf("Listening on %s proxying to %s (local tls: %t, local zip: %t, remote tls: %t, remote zip: %t)", listen.Addr(), p.remoteAddr, p.localTLS, p.localZip, p.remoteTLS, p.remoteZip)
 
 	connID := 0
 	for {
@@ -142,47 +141,19 @@ func (p *TCPProxy) handleConnection(conn net.Conn, connID int) {
 	var remoteReader io.Reader = remote
 	var remoteWriter io.Writer = remote
 
-	if p.localZstd {
-		connReader, err = zstd.NewReader(conn, zstd.WithDecoderConcurrency(1))
-		if err != nil {
-			log.Println("Error creating local zstd reader:", err, "id:", connID)
-			return
-		}
-		defer connReader.(*zstd.Decoder).Close()
-		connWriter, err = zstd.NewWriter(conn, zstd.WithEncoderConcurrency(1))
-		if err != nil {
-			log.Println("Error creating local zstd writer:", err, "id:", connID)
-			return
-		}
-		defer connWriter.(*zstd.Encoder).Close()
+	if p.localZip {
+		connReader, _ = gzip.NewReader(conn)
+		defer connReader.(*gzip.Reader).Close()
+		connWriter, _ = gzip.NewWriterLevel(conn, gzip.BestSpeed)
+		defer connWriter.(*gzip.Writer).Close()
 	}
 
-	if p.remoteZstd {
-		remoteReader, err = zstd.NewReader(remote, zstd.WithDecoderConcurrency(1))
-		if err != nil {
-			log.Println("Error creating remote zstd reader:", err, "id:", connID)
-			return
-		}
-		defer remoteReader.(*zstd.Decoder).Close()
-		remoteWriter, err = zstd.NewWriter(remote, zstd.WithEncoderConcurrency(1))
-		if err != nil {
-			log.Println("Error creating remote zstd writer:", err, "id:", connID)
-			return
-		}
-		defer remoteWriter.(*zstd.Encoder).Close()
+	if p.remoteZip {
+		remoteReader, _ = gzip.NewReader(remote)
+		defer remoteReader.(*gzip.Reader).Close()
+		remoteWriter, _ = gzip.NewWriterLevel(remote, gzip.BestSpeed)
+		defer remoteWriter.(*gzip.Writer).Close()
 	}
-
-	/*
-		if p.localZstd {
-			connReader = snappy.NewReader(conn)
-			connWriter = snappy.NewWriter(conn)
-		}
-
-		if p.remoteZstd {
-			remoteReader = snappy.NewReader(remote)
-			remoteWriter = snappy.NewWriter(remote)
-		}
-	*/
 
 	var wg sync.WaitGroup
 	wg.Add(2)

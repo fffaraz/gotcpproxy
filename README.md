@@ -51,10 +51,10 @@ client <--(plain)--> GoTCPproxy (logger) <--(plain)--> target
 ```
 
 ## Use case 5
-client <--(plain)--> GoTCPproxy (local) <----(Zstd)----> GoTCPproxy (remote) <--(plain)--> target
+client <--(plain)--> GoTCPproxy (local) <----(Zip)----> GoTCPproxy (remote) <--(plain)--> target
 ```
-./gotcpproxy.exe -local-port 8080 -remote-addr 127.0.0.1:8081 -remote-zstd
-./gotcpproxy.exe -local-port 8081 -remote-addr 192.168.1.2:22 -local-zstd
+./gotcpproxy.exe -local-port 8080 -remote-addr 127.0.0.1:8081 -remote-zip
+./gotcpproxy.exe -local-port 8081 -remote-addr 192.168.1.2:22 -local-zip
 ```
 
 ## HTTP/SOCKS5 Proxy

@@ -12,15 +12,15 @@ func main() {
 	flag.UintVar(&localPort, "local-port", 0, "local port")
 	var localTLS bool
 	flag.BoolVar(&localTLS, "local-tls", false, "local tls")
-	var localZstd bool
-	flag.BoolVar(&localZstd, "local-zstd", false, "local zstd")
+	var localZip bool
+	flag.BoolVar(&localZip, "local-zip", false, "local zip")
 
 	var remoteAddr string
 	flag.StringVar(&remoteAddr, "remote-addr", "", "remote addr")
 	var remoteTLS bool
 	flag.BoolVar(&remoteTLS, "remote-tls", false, "remote tls")
-	var remoteZstd bool
-	flag.BoolVar(&remoteZstd, "remote-zstd", false, "remote zstd")
+	var remoteZip bool
+	flag.BoolVar(&remoteZip, "remote-zip", false, "remote zip")
 
 	var localCrt string
 	flag.StringVar(&localCrt, "local-crt", "cert/local.crt", "local crt")
@@ -38,15 +38,14 @@ func main() {
 
 	flag.Parse()
 
-	proxy, err := proxy.NewTCPProxy(localPort, localTLS, localZstd, remoteAddr, remoteTLS, remoteZstd, localCrt, localKey, remoteCrt, peerCrt, logData)
+	proxy, err := proxy.NewTCPProxy(localPort, localTLS, localZip, remoteAddr, remoteTLS, remoteZip, localCrt, localKey, remoteCrt, peerCrt, logData)
 	if err != nil {
 		fmt.Println("ERROR:", err)
 		flag.Usage()
 		return
 	}
 	if err := proxy.Run(); err != nil {
-		fmt.Println("ERROR:", err)
-		flag.Usage()
+		fmt.Println(err)
 		return
 	}
 }
