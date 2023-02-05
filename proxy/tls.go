@@ -8,11 +8,11 @@ import (
 func PrintTLSConnState(conn *tls.Conn) {
 	fmt.Println(">>>>>>>>>>>>>>>> TLS INFO <<<<<<<<<<<<<<<<")
 	state := conn.ConnectionState()
-	fmt.Printf("Version: %x\n", state.Version)
-	fmt.Printf("HandshakeComplete: %t\n", state.HandshakeComplete)
-	fmt.Printf("DidResume: %t\n", state.DidResume)
-	fmt.Printf("CipherSuite: %x\n", state.CipherSuite)
-	fmt.Printf("NegotiatedProtocol: %s\n", state.NegotiatedProtocol)
+	fmt.Println("Version:", state.Version)
+	fmt.Println("HandshakeComplete:", state.HandshakeComplete)
+	fmt.Println("DidResume:", state.DidResume)
+	fmt.Println("CipherSuite:", state.CipherSuite)
+	fmt.Println("NegotiatedProtocol:", state.NegotiatedProtocol)
 	fmt.Println("Certificate chain:")
 	for i, cert := range state.PeerCertificates {
 		subject := cert.Subject
