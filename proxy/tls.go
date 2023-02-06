@@ -1,7 +1,9 @@
 package proxy
 
 import (
+	"crypto/ed25519"
 	"crypto/tls"
+	"encoding/hex"
 	"fmt"
 )
 
@@ -27,10 +29,15 @@ func PrintTLSConnState(conn *tls.Conn) {
 		fmt.Println("IP addresses:", cert.IPAddresses)
 		fmt.Println("Email addresses:", cert.EmailAddresses)
 		fmt.Println("URIs:", cert.URIs)
-		fmt.Println("Signature:", cert.Signature)
+		fmt.Println("Signature:", hex.EncodeToString(cert.Signature))
 		fmt.Println("Signature algorithm:", cert.SignatureAlgorithm)
 		fmt.Println("Public key algorithm:", cert.PublicKeyAlgorithm)
-		fmt.Println("Public key:", cert.PublicKey)
+		switch cert.PublicKey.(type) {
+		case ed25519.PublicKey:
+			fmt.Println("Public key:", hex.EncodeToString(cert.PublicKey.(ed25519.PublicKey)))
+		default:
+			fmt.Println("Public key:", cert.PublicKey)
+		}
 	}
 	fmt.Println(">>>>>>>>>>>>>>>> END TLS INFO <<<<<<<<<<<<<<<<")
 }
